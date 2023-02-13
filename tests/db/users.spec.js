@@ -26,7 +26,7 @@ describe("DB Users", () => {
       expect(user.username).toBe(fakeUserData.username);
     });
 
-    xit("Does NOT return the password", async () => {
+  xit("Does NOT return the password", async () => {
       const fakeUserData = {
         username: faker.internet.userName(),
         password: faker.internet.password(),
@@ -43,7 +43,9 @@ describe("DB Users", () => {
         password: faker.internet.password(),
       };
       await createUser(fakeUserData);
+      console.log(await createUser(fakeUserData));
       const user = await getUserByUsername(fakeUserData.username);
+      console.log(user);
       expect(user).toBeTruthy();
       expect(user.username).toBe(fakeUserData.username);
     });
