@@ -37,7 +37,28 @@ async function getRoutineActivityById(id) {
 
 async function getRoutineActivitiesByRoutine({ id }) { }
 
-async function updateRoutineActivity({ id, ...fields }) { }
+async function updateRoutineActivity({ id, ...fields }) { 
+  const setString = Object.keys(fields).map(
+    (key, index) => `"${ key }"=$${ index + 1 }`
+  ).join(', ');
+
+  if (setString.length === 0) {
+    return;
+  }
+
+  try {
+    const { rows:  routine_activities } = await client.query(`
+      UPDATE routine_activities
+      SET ${ setString }
+      WHERE routine_activities.id=${ id }
+      RETURNING *;
+    `, Object.values(fields));
+
+    return routine_activities;
+  } catch (error) {
+    throw error;
+  }
+}
 
 async function destroyRoutineActivity(id) { }
 
