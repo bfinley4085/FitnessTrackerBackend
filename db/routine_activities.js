@@ -37,9 +37,11 @@ async function getRoutineActivityById(id) {
 
 async function getRoutineActivitiesByRoutine({ id }) { }
 
-async function updateRoutineActivity({ id, ...fields }) { 
+async function updateRoutineActivity({ id, count, duration}) { 
+  const fields = { count,duration}
+  
   const setString = Object.keys(fields).map(
-    (key, index) => `"${ key }"=$${ index + 1 }`
+    (key, index) => `"${key}"=$${index + 1}`
   ).join(', ');
 
   if (setString.length === 0) {
@@ -47,7 +49,7 @@ async function updateRoutineActivity({ id, ...fields }) {
   }
 
   try {
-    const { rows:  routine_activities } = await client.query(`
+    const { rows: [ routine_activities] } = await client.query(`
       UPDATE routine_activities
       SET ${ setString }
       WHERE routine_activities.id=${ id }

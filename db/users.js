@@ -1,16 +1,19 @@
 const client = require("./client");
+const bcrypt = require('bcrypt');
 
 // database functions
 
 // user functions
 async function createUser({ username, password }) {
+  const SALT_COUNT = 10;
+  const hashedPassword = await bcrypt.hash(password, SALT_COUNT);
   try {
     const { rows: [user] } = await client.query(`
       INSERT INTO users(username, password) 
       VALUES($1, $2) 
       ON CONFLICT (username) DO NOTHING 
-      RETURNING users.username;
-    `, [username, password]);
+      RETURNING username, id;
+    `, [username, hashedPassword]);
 
     return user;
   } catch (error) {
@@ -21,29 +24,33 @@ async function createUser({ username, password }) {
 
 async function getUser({ username, password }) {
   try {
-    const { rows: [user] } = await client.query(`
+    const user = await getUserByUsername(username);
+    const hashedPassword = user.password;
+    const passwordMatch = await bcrypt.compare(password, hashedPassword);
+    if (passwordMatch) {
+      const { rows: [user] } = await client.query(`
       SELECT "username", "id"
       FROM users
-      WHERE users.password=${password} AND users.username =${username}
-    `);
+      WHERE username=$1 AND password =$2
+    `, [username, hashedPassword]);
 
-    if (!user) {
+      return user;
+    } else {
       return null
     }
-
-    return user;
-  } catch (error) {
+  }
+  catch (error) {
     throw error;
   }
 }
 
 async function getUserById(userId) {
   try {
-    const { rows: user } = await client.query(`
+    const { rows: [user] } = await client.query(`
       SELECT "id", "username"
       FROM users
-      WHERE id=${userId}
-    `);
+      WHERE id= $1;
+    `, [userId]);
 
     if (!user) {
       return null
@@ -57,11 +64,11 @@ async function getUserById(userId) {
 
 async function getUserByUsername(userName) {
   try {
-    const { rows: user } = await client.query(`
-          SELECT "id", "username"
+    const { rows: [user] } = await client.query(`
+          SELECT *
           FROM users
-          WHERE username=${userName}
-        `,);
+          WHERE username= $1;
+        `, [userName]);
 
     if (!user) {
       return null

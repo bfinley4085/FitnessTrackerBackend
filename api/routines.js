@@ -1,20 +1,24 @@
 const express = require('express');
-const { getAllPublicRoutines, createRoutine, destroyRoutine, addActivityToRoutine, attachActivitiesToRoutines } = require('../db');
-const router = express.Router();
+const {getAllRoutines, getAllPublicRoutines, updateRoutine, createRoutine, destroyRoutine, addActivityToRoutine, attachActivitiesToRoutines, getRoutineById } = require('../db');
+const { DuplicateRoutineActivityError } = require('../errors');
+const routinesRouter = express.Router();
 
 // GET /api/routines
-router.get('/api/routines', async (req, res, next) => {
+routinesRouter.get('/', async (req, res, next) => {
     try {
       const routines = await getAllPublicRoutines();
-      res.send({ routines });
+      res.send( routines );
     } catch (error) {
       next(error);
     }
   });
 // POST /api/routines
-router.post('/api/routines', async (req, res, next) => {
+routinesRouter.post('/', async (req, res, next) => {
     try {
-      const newRoutine = await createRoutine(req.body);
+      const creatorId =req.user.id;
+      const body = {isPublic, name, goal, creatorId}
+      
+      const newRoutine = await createRoutine(body);
   
       res.send(newRoutine);
     } catch (error) {
@@ -22,20 +26,66 @@ router.post('/api/routines', async (req, res, next) => {
     }
   });
 // PATCH /api/routines/:routineId
+routinesRouter.patch('/api/routines/:routineId', async (req, res, next) => {
+  const { routineId } = req.params;
+  const { isPublic, name, goal } = req.body;
+
+  const updateFields = {};
+
+  if (name) {
+    updateFields.name = name;
+  }
+
+  if (goal) {
+    updateFields.goal = goal;
+  }
+
+  try {
+    const originalRoutine = await getAllRoutines(routineId);
+
+    if (originalRoutine.author.id === req.user.id) {
+      const updatedRoutine = await updateRoutine(routineId, updateFields);
+      res.send({ routine: updatedRoutine })
+    } else {
+      next({
+        name: 'UnauthorizedUserError',
+        message: 'You cannot update a post that is not yours'
+      })
+    }
+  } catch ({ name, message }) {
+    next({ name, message });
+  }
+});
+
+
 
 // DELETE /api/routines/:routineId
+// routines.Router.delete(
+//   '/:routineId',
+//   async (req, res, next) => {
+//     const {routineId} = req.params;
 
+//     try {
+//       const response = await getRoutineById(routineId);
+
+//     }
+//   }
+// )
 // POST /api/routines/:routineId/activities
-router.post('/api/routines/:routineId/activities', async (req, res, next) => {
-    try {
-      const { newActivity } = req.body;
-  
-      const newRoutineActivity = await attachActivitiesToRoutines(newActivity);
-      
-      res.send(newRoutineActivity);
-    } catch (error) {
-      next(error);
-    }
-  });
-module.exports = router;
+routinesRouter.post('/:routineId/activities', async (req, res, next) => {
+     const { routineId, activityId, count, duration } = req.body;
+     try {
+        const response = await addActivityToRoutine(req.body);
+        response
+           ? res.send(response)
+           : next({
+                error: DuplicateRoutineActivityError(),
+                name: 'Duplicated Routine Activity Error',
+             });
+     } catch (error) {
+        next(error);
+     }
+  }
+);
+module.exports = routinesRouter;
 // work on the POST,DELETE,PATCH

@@ -21,7 +21,7 @@ async function getRoutineById(id) {
   const { rows: [routines] } = await client.query(`
   SELECT * FROM routines;
   WHERE routines.id = ${id}
-`);
+`, [id]);
 
 
   return routines;
@@ -39,11 +39,13 @@ console.log(routines);
 
 async function getAllRoutines() {
   const { rows: routines } = await client.query(`
-      SELECT * FROM routines
-      JOIN users ON routines."creatorId" = users.id;
-    `)
+      SELECT routines.*, users.username AS "creatorName"
+      FROM routines
+      JOIN users ON routines."creatorId" = users.id
+    `);
   console.log(routines)
-    return routines
+
+  return await attachActivitiesToRoutines(routines)
     // const allRoutines = await attachActivitiesToRoutines(routines);
 
     // return allRoutines;
@@ -102,7 +104,15 @@ async function updateRoutine({ id, ...fields }) {
   }
 }
 
-async function destroyRoutine(id) {}
+async function destroyRoutine(id) {
+  await client.query(`
+  DELETE FROM routine_activities
+  WHERE routine_activities."routineId" = ${id}`);
+
+   await client.query(`
+  DELETE FROM routines
+  WHERE id = ${id}`);
+}
 
 
 module.exports = {

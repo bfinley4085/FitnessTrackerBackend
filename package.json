@@ -9,7 +9,8 @@
     "start:dev": "nodemon server.js",
     "start": "node server.js",
     "test": "jest --runInBand",
-    "test:watch": "jest --runInBand --watchAll"
+    "test:watch": "jest --runInBand --watchAll",
+    "build": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -37,6 +38,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "bcrypt": "^4.0.1",
+    "build": "^0.1.4",
     "chalk": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
